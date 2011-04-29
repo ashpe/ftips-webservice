@@ -95,7 +95,8 @@ sub add_tipping_account {
             tipping_password => $website_pwd,
         }
     );
-    return $web;
+    
+    return $add_account;
 }
 
 sub autotip {
@@ -154,9 +155,13 @@ sub get_groups {
     my $schema = get_schema();
     my $rs   = $schema->resultset('UserLogin')->search( { username => $usr } );
     my $user = $rs->first;
-
-    my @get_groups = $user->groups->all;
-
+    my @get_groups;		
+    $rs = $user->groups;
+    
+    while (my $group = $rs->next) {
+	push @get_groups, $group->group_name;
+    }		
+    	
     return \@get_groups;
 
 }
@@ -165,9 +170,14 @@ sub get_websites {
     my ($svr) = @_;
 
     my $schema        = get_schema();
-    my @website_names = $schema->resultset('TippingWebsite')->all;
+    my $rs	      = $schema->resultset('TippingWebsite');
+    my @get_websites;
 
-    return \@website_names;
+    while (my $website = $rs->next) {
+	push @get_websites, $website->website_name;
+    }	 	
+	 
+    return \@get_websites;
 
 }
 
@@ -193,7 +203,7 @@ $srv->add_method(
 );
 
 $srv->add_method(
-    { name => 'get_websites', signature => ['string'], code => \&get_websites }
+    { name => 'get_websites', signature => ['array'], code => \&get_websites }
 );
 
 $srv->add_method(

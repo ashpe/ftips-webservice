@@ -74,7 +74,7 @@ Related object: L<Footy::Schema::Result::UserTippingAccount>
 
 __PACKAGE__->has_many(
   "user_tipping_accounts_groups",
-  "Footy::Schema::Result::UserTippingAccount",
+  "Footy::Schema::Result::UserLogin",
   { "foreign.group_id" => "self.group_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );

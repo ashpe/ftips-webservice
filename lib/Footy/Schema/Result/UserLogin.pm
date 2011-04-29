@@ -80,6 +80,13 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+__PACKAGE__->has_many(
+  "groups",
+  "Footy::Schema::Result::TippingGroup",
+  { "foreign.user_id" => "self.user_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 
 # Created by DBIx::Class::Schema::Loader v0.07010 @ 2011-04-27 03:21:01
 # DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:8V/C7JzfR+mqnWcl0r9neQ
