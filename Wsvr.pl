@@ -9,11 +9,13 @@ use Moose;
 use Modern::Perl;
 use Footy::Schema;
 use Footy::Mechanize;
+use Footy::Config;
 
-my $database = 'test';
-my $hostname = 'localhost';
-my $user     = 'root';
-my $password = 'brodie123';
+my $conf = Footy::Config->load();
+my $database = $conf->{database}{database_name};
+my $hostname = $conf->{database}{hostname};
+my $user     = $conf->{database}{user};
+my $password = $conf->{database}{password};
 
 sub get_schema {
     my $schema =

@@ -1,0 +1,6 @@
+database:
+   database_name: test
+   hostname: localhost
+   user: root
+   password: brodie123
+
