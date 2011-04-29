@@ -12,118 +12,112 @@ use Footy::Mechanize;
 
 my $database = 'test';
 my $hostname = 'localhost';
-my $user = 'root';
+my $user     = 'root';
 my $password = 'brodie123';
 
 sub get_schema {
-  my $schema = Footy::Schema->connect("DBI:mysql:database=$database;host=$hostname", $user, $password);
-  return $schema;
+    my $schema =
+      Footy::Schema->connect( "DBI:mysql:database=$database;host=$hostname",
+        $user, $password );
+    return $schema;
 }
 
 sub get_login {
-  my ($svr, $usr, $pwd) = @_;
+    my ( $svr, $usr, $pwd ) = @_;
 
-  my $schema = get_schema();
-  my $rs = $schema->resultset('UserLogin')->search({
-                                                     username => $usr,
-                                                     password => $pwd,
-                                                 });
-  my $user = $rs->first;
+    my $schema = get_schema();
+    my $rs     = $schema->resultset('UserLogin')->search(
+        {
+            username => $usr,
+            password => $pwd,
+        }
+    );
+    my $user = $rs->first;
 
-  if ($user) {
-    return 1;
-  } else {
-    return 0;
-  }
+    if ($user) {
+        return 1;
+    }
+    else {
+        return 0;
+    }
 
 }
 
 sub new_account {
-  my ($svr, $usr, $pwd, $email) = @_;
+    my ( $svr, $usr, $pwd, $email ) = @_;
 
-  my $schema = get_schema();
-  my $rs = $schema->resultset('UserLogin')->search({username => $usr});
-  my $user = $rs->first;
+    my $schema = get_schema();
+    my $rs   = $schema->resultset('UserLogin')->search( { username => $usr } );
+    my $user = $rs->first;
 
-  if (!$user) {
-    
-    my $new_user = $schema->resultset('UserLogin')->create({
-                                        username => $usr,
-                                        password => $pwd,
-                                        email    => $email,
-                                        status   => 'inactive',
-                                    });
-    my $add_default_group = $schema->resultset('TippingGroup')->create({
-                                                user_id => $new_user->user_id,
-                                                group_name => 'default',
-                                            });
+    if ( !$user ) {
 
-    return "Account created successfully. Check your email to confirm..";
+        my $new_user = $schema->resultset('UserLogin')->create(
+            {
+                username => $usr,
+                password => $pwd,
+                email    => $email,
+                status   => 'inactive',
+            }
+        );
 
-  } else {
-    return "Username already exists.";
-  }
+        $new_user->add_to_groups( { group_name => 'default' } );
+
+        return "Account created successfully. You may login now.";
+
+    }
+    else {
+        return "Username already exists.";
+    }
 }
 
 sub add_tipping_account {
-    my ($svr, $usr, $web, $website_usr, $website_pwd, $group_name) = @_;
+    my ( $svr, $usr, $web, $website_usr, $website_pwd, $group_name ) = @_;
 
     my $schema = get_schema();
-    my $rs = $schema->resultset('UserLogin')->search({
-            username => $usr,
-        });
+    my $rs = $schema->resultset('UserLogin')->search( { username => $usr, } );
 
     my $user = $rs->first;
-        
 
-    $rs = $schema->resultset('TippingGroup')->search({
-            group_name => $group_name,
-            user_id => $user->user_id,
-        });
+    my $group = $user->groups->search( { group_name => $group_name } );
 
-    my $group = $rs->first;
-
-
-    $rs = $schema->resultset('TippingWebsite')->search({
-            website_name => $web,
-        });
+    $rs =
+      $schema->resultset('TippingWebsite')->search( { website_name => $web, } );
 
     my $website = $rs->first;
 
-    my $add_account = $schema->resultset('UserTippingAccount')->create({
-                                                user_id => $user->user_id,
-                                                group_id => $group->group_id,
-                                                website_id => $website->website_id,
-                                                tipping_username => $website_usr,
-                                                tipping_password => $website_pwd,
-                                            });
+    my $add_account = $schema->resultset('UserTippingAccount')->create(
+        {
+            user_id          => $user->user_id,
+            group_id         => $group->group_id,
+            website_id       => $website->website_id,
+            tipping_username => $website_usr,
+            tipping_password => $website_pwd,
+        }
+    );
     return $web;
 }
+
 sub autotip {
-    my ($svr, $group_name, $usr, $margin, $tips) = @_;
+    my ( $svr, $group_name, $usr, $margin, $tips ) = @_;
 
     my $schema = get_schema();
-    my $success; 
-    my $rs = $schema->resultset('UserLogin')->search({username => $usr});
+    my $success;
+    my $rs = $schema->resultset('UserLogin')->search( { username => $usr } );
     my $user = $rs->first;
-    
-    $rs = $schema->resultset('TippingGroup')->search({
-            user_id => $user->user_id,
-            group_name => $group_name,
-        });
 
-    my $group = $rs->first;
+    my $group = $user->groups->search( { group_name => $group_name } );
 
-    $rs = $schema->resultset('UserTippingAccount')->search({
-            user_id => $user->user_id,
+    $rs = $schema->resultset('UserTippingAccount')->search(
+        {
+            user_id  => $user->user_id,
             group_id => $group->group_id,
-        });
+        }
+    );
 
-    while (my $account = $rs->next) {
-           Footy::Mechanize->footytips($account->tipping_username,
-                                       $account->tipping_password,
-                                       $margin, $tips,
-                                );
+    while ( my $account = $rs->next ) {
+        Footy::Mechanize->footytips( $account->tipping_username,
+            $account->tipping_password, $margin, $tips, );
     }
 
     return $tips;
@@ -131,21 +125,22 @@ sub autotip {
 }
 
 sub get_tipping_accounts {
-    my ($svr, $usr) = @_;
+    my ( $svr, $usr ) = @_;
 
     my @tipping_accounts;
     my $schema = get_schema();
-    my $rs = $schema->resultset('UserLogin')->search({username => $usr});
+    my $rs   = $schema->resultset('UserLogin')->search( { username => $usr } );
     my $user = $rs->first;
-    
-    $rs = $schema->resultset('UserTippingAccount')->search({
-                                                    user_id => $user->user_id,
-                                            });
-    while (my $tipping_account = $rs->next) {
+
+    $rs =
+      $schema->resultset('UserTippingAccount')
+      ->search( { user_id => $user->user_id, } );
+
+    while ( my $tipping_account = $rs->next ) {
         my %tmp = ();
-        $tmp{website} = $tipping_account->website->website_name;
+        $tmp{website}  = $tipping_account->website->website_name;
         $tmp{username} = $tipping_account->tipping_username;
-        $tmp{group} = $tipping_account->group->group_name;
+        $tmp{group}    = $tipping_account->group->group_name;
 
         push @tipping_accounts, \%tmp;
     }
@@ -153,20 +148,89 @@ sub get_tipping_accounts {
     return \@tipping_accounts;
 }
 
+sub get_groups {
+    my ( $svr, $usr ) = @_;
+
+    my $schema = get_schema();
+    my $rs   = $schema->resultset('UserLogin')->search( { username => $usr } );
+    my $user = $rs->first;
+
+    my @get_groups = $user->groups->all;
+
+    return \@get_groups;
+
+}
+
+sub get_websites {
+    my ($svr) = @_;
+
+    my $schema        = get_schema();
+    my @website_names = $schema->resultset('TippingWebsite')->all;
+
+    return \@website_names;
+
+}
 
 my $port = 4420;
 
-my $srv = RPC::XML::Server->new(port => $port);
+my $srv = RPC::XML::Server->new( port => $port );
+
 # Several of these, most likely:
-$srv->add_method({ name => 'autotip', signature => ['string string string string string'], code => \&autotip});
+$srv->add_method(
+    {
+        name      => 'autotip',
+        signature => ['string string string string string'],
+        code      => \&autotip
+    }
+);
 
-$srv->add_method({ name => 'add_tipping_account', signature => ['string string string string string string'], code => \&add_tipping_account});
-$srv->add_method({ name => 'get_tipping_accounts', signature => ['string string'], code => \&get_tipping_accounts});
-$srv->add_method({ name => 'get_login', signature => ['string string string'], code => \&get_login});
-$srv->add_method({ name => 'new_account', signature => ['string string string string'], code => \&new_account});
+$srv->add_method(
+    {
+        name      => 'get_groups',
+        signature => ['string string'],
+        code      => \&get_groups
+    }
+);
 
-print "Footytips automation XMLRPC server running on port $port.. (ctrl-c to close)\n";
+$srv->add_method(
+    { name => 'get_websites', signature => ['string'], code => \&get_websites }
+);
 
-$srv->server_loop; # Never returns
+$srv->add_method(
+    {
+        name      => 'add_tipping_account',
+        signature => ['string string string string string string'],
+        code      => \&add_tipping_account
+    }
+);
+
+$srv->add_method(
+    {
+        name      => 'get_tipping_accounts',
+        signature => ['string string'],
+        code      => \&get_tipping_accounts
+    }
+);
+
+$srv->add_method(
+    {
+        name      => 'get_login',
+        signature => ['string string string'],
+        code      => \&get_login
+    }
+);
+
+$srv->add_method(
+    {
+        name      => 'new_account',
+        signature => ['string string string string'],
+        code      => \&new_account
+    }
+);
+
+print
+"Footytips automation XMLRPC server running on port $port.. (ctrl-c to close)\n";
+
+$srv->server_loop;    # Never returns
 
 1;
