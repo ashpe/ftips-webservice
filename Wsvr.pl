@@ -75,11 +75,12 @@ sub add_tipping_account {
     my ( $svr, $usr, $web, $website_usr, $website_pwd, $group_name ) = @_;
 
     my $schema = get_schema();
+    
     my $rs = $schema->resultset('UserLogin')->search( { username => $usr, } );
-
     my $user = $rs->first;
 
-    my $group = $user->groups->search( { group_name => $group_name } );
+    $rs = $schema->resultset('TippingGroup')->search( { group_name => $group_name } );
+    my $group = $rs->first;	
 
     $rs =
       $schema->resultset('TippingWebsite')->search( { website_name => $web, } );
@@ -107,7 +108,8 @@ sub autotip {
     my $rs = $schema->resultset('UserLogin')->search( { username => $usr } );
     my $user = $rs->first;
 
-    my $group = $user->groups->search( { group_name => $group_name } );
+    $rs = $schema->resultset('TippingGroup')->search( { group_name => $group_name } );
+    my $group = $rs->first;	
 
     $rs = $schema->resultset('UserTippingAccount')->search(
         {
