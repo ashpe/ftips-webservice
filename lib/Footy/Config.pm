@@ -8,7 +8,7 @@ use Data::Dumper;
 sub load {
 
     my $config = Config::ZOMG->new(
-        name => 'conf'
+        name => 'database'
     );
 
     my $config_hash = $config->load;

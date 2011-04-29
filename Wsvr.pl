@@ -11,7 +11,7 @@ use Footy::Schema;
 use Footy::Mechanize;
 use Footy::Config;
 
-my $conf = Footy::Config->load();
+my $conf     = Footy::Config->load();
 my $database = $conf->{database}{database_name};
 my $hostname = $conf->{database}{hostname};
 my $user     = $conf->{database}{user};
@@ -121,8 +121,14 @@ sub autotip {
     );
 
     while ( my $account = $rs->next ) {
-        Footy::Mechanize->footytips( $account->tipping_username,
+           if ($account->website_id == 1) {
+		Footy::Mechanize->footytips( $account->tipping_username,
             $account->tipping_password, $margin, $tips, );
+	   } elsif ($account->website_id == 2) {
+		Footy::Mechanize->bigfooty( $account->tipping_username,
+            $account->tipping_password, $margin, $tips, );
+	}
+
     }
 
     return $tips;
