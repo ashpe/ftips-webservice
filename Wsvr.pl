@@ -45,6 +45,21 @@ sub get_login {
 
 }
 
+sub add_group {
+    my ( $svr, $usr, $grp ) = @_;
+    
+    my $schema = get_schema();
+    my $user = $schema->resultset('UserLogin')->search(
+         {
+            username => $usr,
+        }
+    );
+
+    $user->add_to_groups( { group_name => $grp } );
+
+    return $user;
+}
+
 sub new_account {
     my ( $svr, $usr, $pwd, $email ) = @_;
 
@@ -196,6 +211,14 @@ my $port = 4420;
 my $srv = RPC::XML::Server->new( port => $port );
 
 # Several of these, most likely:
+$srv->add_method(
+    {
+        name      => 'add_group',
+        signature => ['string string'],
+        code      => \&add_group
+    }
+);
+
 $srv->add_method(
     {
         name      => 'autotip',
